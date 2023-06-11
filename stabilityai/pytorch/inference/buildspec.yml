@@ -2,8 +2,8 @@ account_id: &ACCOUNT_ID <set-$ACCOUNT_ID-in-environment>
 region: &REGION <set-$REGION-in-environment>
 base_framework: &BASE_FRAMEWORK pytorch
 framework: &FRAMEWORK !join [ "stabilityai_", *BASE_FRAMEWORK]
-version: &VERSION 1.13.1
-short_version: &SHORT_VERSION "1.13"
+version: &VERSION 2.0.0
+short_version: &SHORT_VERSION "2.0"
 contributor: stabilityai
 arch_type: x86
 
@@ -30,20 +30,21 @@ context:
       target: deep_learning_container.py
 
 images:
-  BuildStabilityAiPytorchGpuPy39Cu117InferenceDockerImage:
+  BuildStabilityAiPytorchGpuPy310InferenceDockerImage:
     <<: *INFERENCE_REPOSITORY
     build: &STABILITYAI_PYTORCH_GPU_INFERENCE_PY3 false
     image_size_baseline: &IMAGE_SIZE_BASELINE 15000
     device_type: &DEVICE_TYPE gpu
     python_version: &DOCKER_PYTHON_VERSION py3
-    tag_python_version: &TAG_PYTHON_VERSION py39
-    cuda_version: &CUDA_VERSION cu117
+    tag_python_version: &TAG_PYTHON_VERSION py310
+    cuda_version: &CUDA_VERSION cu118
     os_version: &OS_VERSION ubuntu20.04
-    diffusers_version: &DIFFUSERS_VERSION 0.17.0
+    model_framework: &MODEL_FRAMEWORK diffusers
+    model_framework_version: &MODEL_FRAMEWORK_VERSION 0.17.0
     stability_sdk_version: &STABILITY_SDK_VERSION 0.8.1
-    tag: !join [ *VERSION, '-', 'stability-sdk', *STABILITY_SDK_VERSION, '-', *DEVICE_TYPE, '-', *TAG_PYTHON_VERSION, '-',
-                 *CUDA_VERSION, '-', *OS_VERSION ]
+    tag: !join [ *VERSION, '-', *MODEL_FRAMEWORK, *MODEL_FRAMEWORK_VERSION, '-', *DEVICE_TYPE, '-', 
+                 *TAG_PYTHON_VERSION, '-', *CUDA_VERSION, '-', *OS_VERSION ]
     docker_file: !join [ docker/, *SHORT_VERSION, /, *DOCKER_PYTHON_VERSION, /,
-                         *CUDA_VERSION, /Dockerfile., *DEVICE_TYPE ]
+                         *CUDA_VERSION, /, *MODEL_FRAMEWORK, /Dockerfile., *DEVICE_TYPE ]
     context:
       <<: *INFERENCE_CONTEXT
