@@ -182,7 +182,9 @@ def image_builder(buildspec, image_types=[], device_types=[]):
             if model_framework:
                 model_framework_version = image_config.get("model_framework_version")
                 if not model_framework_version:
-                    raise KeyError(f"Stability AI buildspec.yml must contain 'model_framework_version' if 'model_framework' is set for the image")
+                    raise KeyError(
+                        f"Stability AI buildspec.yml must contain 'model_framework_version' if 'model_framework' is set for the image"
+                    )
                 extra_build_args["MODEL_FRAMEWORK"] = model_framework
                 extra_build_args["MODEL_FRAMEWORK_VERSION"] = model_framework_version
             stability_sdk_version = image_config.get("stability_sdk_version")
@@ -192,16 +194,18 @@ def image_builder(buildspec, image_types=[], device_types=[]):
                 extra_build_args["TRANSFORMERS_VERSION"] = transformers_version
             accelerate_version = image_config.get("accelerate_version")
             if accelerate_version:
-                extra_build_args["ACCELERATE_VERSION"] = accelerate_version                
+                extra_build_args["ACCELERATE_VERSION"] = accelerate_version
 
             model_optimizer = image_config.get("model_optimizer")
             if model_optimizer:
                 model_optimizer_version = image_config.get("model_optimizer_version")
                 model_optimizer_url = image_config.get("model_optimizer_url")
                 extra_build_args["MODEL_OPTIMIZER"] = model_optimizer
-                
+
                 if not model_optimizer_version and not model_optimizer_url:
-                    raise KeyError(f"Stability AI buildspec.yml must contain 'model_optimizer_version' and/or 'model_optimizer_url' when 'model_optimizer' is set for the image")
+                    raise KeyError(
+                        f"Stability AI buildspec.yml must contain 'model_optimizer_version' and/or 'model_optimizer_url' when 'model_optimizer' is set for the image"
+                    )
 
                 if model_optimizer_version:
                     extra_build_args["MODEL_OPTIMIZER_VERSION"] = model_optimizer_version
