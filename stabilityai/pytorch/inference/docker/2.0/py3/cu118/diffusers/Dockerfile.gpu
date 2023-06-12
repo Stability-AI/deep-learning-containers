@@ -3,6 +3,9 @@ ARG PYTHON_VERSION=3.10.9
 ARG MICROMAMBA_VERSION=1.4.3-0
 ARG OPEN_MPI_VERSION=4.1.5
 
+# Nvidia software versions
+ARG CUDNN_VERSION=8.8.0.121
+
 # PyTorch Binaries and versions.
 ARG TORCH_URL=https://aws-pytorch-unified-cicd-binaries.s3.us-west-2.amazonaws.com/r2.0.0_inference/cu118_py310/torch-2.0.0%2Bcu118-cp310-cp310-linux_x86_64.whl
 ARG TORCHVISION_URL=https://aws-pytorch-unified-cicd-binaries.s3.us-west-2.amazonaws.com/r2.0.0_inference/cu118_py310/torchvision-0.15.1%2Bcu118-cp310-cp310-linux_x86_64.whl
@@ -40,13 +43,13 @@ ARG PYTHON_VERSION
 ARG MICROMAMBA_VERSION
 ARG OPEN_MPI_VERSION
 
+# Nvidia software versions
+ARG CUDNN_VERSION
+
 # PyTorch Passed arguments (URLs and Versions)
 ARG TORCH_URL
 ARG TORCHVISION_URL
 ARG TORCHSERVE_VERSION
-
-# Nvidia passed Arguments
-ARG NVML_VERSION
 
 # Set Env Variables for the images
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -82,7 +85,8 @@ RUN apt-get update \
     cuda-cudart-11-8 \
     cuda-libraries-11-8 \
     cuda-libraries-dev-11-8 \
-    cuda-command-line-tools-11-8 \     
+    cuda-command-line-tools-11-8 \  
+    libcudnn8=${CUDNN_VERSION}-1+cuda11.8 \   
     curl \
     git \
     jq \
