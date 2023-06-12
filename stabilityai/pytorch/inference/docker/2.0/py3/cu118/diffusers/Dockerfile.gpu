@@ -197,7 +197,7 @@ ENV STABILITYAI_MODEL_FRAMEWORK=${MODEL_FRAMEWORK}
 
 # Install packages for image generation with Stability models
 RUN pip install --no-cache-dir -U \
-    transformers==${TRANSFORMERS_VERSION} \
+    transformers[sentencepiece]==${TRANSFORMERS_VERSION} \    
     accelerate==${ACCELERATE_VERSION} \ 
     ${MODEL_FRAMEWORK}==${MODEL_FRAMEWORK_VERSION} \    
     'stability-sdk @ git+https://github.com/stability-ai/stability-sdk@sagemaker'
