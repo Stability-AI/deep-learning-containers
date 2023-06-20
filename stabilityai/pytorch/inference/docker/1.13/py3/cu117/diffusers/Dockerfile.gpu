@@ -1,6 +1,6 @@
 ARG PYTHON=python3
 ARG PYTHON_VERSION=3.9.13
-ARG MAMBA_VERSION=23.1.0-1
+ARG MICROMAMBA_VERSION=1.4.3-0
 ARG OPEN_MPI_VERSION=4.1.4
 
 # PyTorch Binaries and versions.
@@ -9,11 +9,26 @@ ARG TORCHVISION_VERSION=0.14.1+cu117
 ARG TORCHSERVE_VERSION=0.7.1
 ARG SM_TOOLKIT_VERSION=2.0.14
 
-ARG TRANSFORMERS_VERSION=4.25.1
-ARG ACCELERATE_VERSION=0.18.0
+ARG TRANSFORMERS_VERSION=4.26.1
+ARG ACCELERATE_VERSION=0.20.3
 ARG STABILITY_SDK_VERSION=0.8.1
-ARG DIFFUSERS_VERSION=0.17.0
-ARG XFORMERS_VERSION=0.0.20
+ARG MODEL_FRAMEWORK=diffusers
+ARG MODEL_FRAMEWORK_VERSION=0.14.0
+
+########################################################
+#  _____ ____ ____    ___
+# | ____/ ___|___ \  |_ _|_ __ ___   __ _  __ _  ___
+# |  _|| |     __) |  | || '_ ` _ \ / _` |/ _` |/ _ \
+# | |__| |___ / __/   | || | | | | | (_| | (_| |  __/
+# |_____\____|_____| |___|_| |_| |_|\__,_|\__, |\___|
+#                                         |___/
+#  ____           _
+# |  _ \ ___  ___(_)_ __   ___ 
+# | |_) / _ \/ __| | '_ \ / _ \
+# |  _ <  __/ (__| | |_) |  __/
+# |_| \_\___|\___|_| .__/ \___|
+#                  |_|
+########################################################
 
 FROM nvidia/cuda:11.7.1-base-ubuntu20.04 AS base_image
 
@@ -27,19 +42,13 @@ LABEL dlc_major_version="1"
 
 ARG PYTHON
 ARG PYTHON_VERSION
-ARG MAMBA_VERSION
+ARG MICROMAMBA_VERSION
 ARG OPEN_MPI_VERSION
 
 # PyTorch Passed arguments (URLs and Versions)
 ARG TORCH_URL
 ARG TORCHVISION_VERSION
 ARG TORCHSERVE_VERSION
-
-ARG TRANSFORMERS_VERSION
-ARG ACCELERATE_VERSION
-ARG STABILITY_SDK_VERSION
-ARG DIFFUSERS_VERSION
-ARG XFORMERS_VERSION
 
 # Set Debian interaction
 ARG DEBIAN_FRONTEND=noninteractive
@@ -64,7 +73,6 @@ ENV DLC_CONTAINER_TYPE=inference
 # Ampere = 8.0;8.6+PTX (P4 and G5 Instances)
 # Ada = 8.9+PTX
 ENV TORCH_CUDA_ARCH_LIST="5.0 7.0+PTX 7.5+PTX 8.0"
-ENV NVML_VERSION=11.7.91
 
 RUN apt-get update \
  && apt-get -y upgrade \
@@ -79,16 +87,14 @@ RUN apt-get update \
     cuda-cudart-11-7 \
     cuda-libraries-11-7 \
     cuda-libraries-dev-11-7 \
-    curl \
-    emacs \
+    curl \    
     git \
     jq \
     libcufft-dev-11-7 \
     libcurand-dev-11-7 \
     libcurl4-openssl-dev \
     libcusolver-dev-11-7 \
-    libcusparse-dev-11-7 \
-    cuda-nvml-dev-11-7=${NVML_VERSION}-1 \
+    libcusparse-dev-11-7 \    
     libgl1-mesa-glx \
     libglib2.0-0 \
     libgomp1 \
@@ -107,7 +113,7 @@ RUN apt-get update \
     unzip \
     zlib1g-dev \
     openssh-client \
-    openssh-server \
+    openssh-server \    
  && rm -rf /var/lib/apt/lists/*
 
 # https://github.com/docker-library/openjdk/issues/261 https://github.com/docker-library/openjdk/pull/263/files
@@ -135,15 +141,13 @@ RUN mkdir -p /var/run/sshd \
  && rm -rf /var/lib/apt/lists/* \
  && apt-get clean
 
-# Install CondaForge miniconda
-# Note: SSD Verification disabled as it breaks installs due to downgrading from py3.10 to py3.9
-RUN curl -L -o ~/mambaforge.sh https://github.com/conda-forge/miniforge/releases/download/${MAMBA_VERSION}/Mambaforge-${MAMBA_VERSION}-Linux-x86_64.sh \
- && chmod +x ~/mambaforge.sh \
- && ~/mambaforge.sh -b -p /opt/conda \
- && rm ~/mambaforge.sh \
- && /opt/conda/bin/conda config --set ssl_verify False \
- && /opt/conda/bin/conda update -y conda \
- && /opt/conda/bin/conda install -c conda-forge python=${PYTHON_VERSION} \
+# Install CondaForge micromamba
+ENV MAMBA_ROOT_PREFIX="/opt/conda"
+ENV TEMP=/tmp
+RUN curl -L -o /usr/local/bin/micromamba https://github.com/mamba-org/micromamba-releases/releases/download/${MICROMAMBA_VERSION}/micromamba-linux-64 \
+ && chmod +x /usr/local/bin/micromamba \ 
+ && micromamba install -n base -c conda-forge python=${PYTHON_VERSION} \
+    conda \
     cython \
     mkl \
     mkl-include \
@@ -155,9 +159,9 @@ RUN curl -L -o ~/mambaforge.sh https://github.com/conda-forge/miniforge/releases
     libgcc \
     # Below 2 are included in miniconda base, but not mamba so need to install
     conda-content-trust \
-    charset-normalizer \
- && /opt/conda/bin/conda install -c pytorch magma-cuda117 \
- && /opt/conda/bin/conda clean -ya
+    charset-normalizer \ 
+ && /usr/local/bin/micromamba -n base clean -ya
+ENV TEMP=/home/model-server/tmp
 
 # symlink pip for OS use
 RUN pip install --upgrade pip --trusted-host pypi.org --trusted-host files.pythonhosted.org \
@@ -179,13 +183,6 @@ RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/wh
     ${TORCH_URL} \    
     torchvision==${TORCHVISION_VERSION} 
 
-# Install packages for image generation with Stability models
-RUN pip install --no-cache-dir -U \
-    transformers==${TRANSFORMERS_VERSION} \
-    accelerate==${ACCELERATE_VERSION} \
-    diffusers==${DIFFUSERS_VERSION} \
-    stability-sdk==${STABILITY_SDK_VERSION}
-
 # Install TorchServe pypi dependencies directly from their requirements.txt file
 # NOTE: This also brings in unnecessary cpu dependencies like nvgpu
 # -> Numpy is higer version as required by torch
@@ -195,6 +192,40 @@ RUN pip install --no-cache-dir -U -r https://raw.githubusercontent.com/pytorch/s
     "pyyaml>=5.4,<5.5" \
     torchserve==${TORCHSERVE_VERSION} \
     torch-model-archiver==${TORCHSERVE_VERSION}
+
+# Stability AI arguments (URLs and Versions)
+ARG TRANSFORMERS_VERSION
+ARG ACCELERATE_VERSION
+ARG STABILITY_SDK_VERSION
+ARG MODEL_FRAMEWORK
+ARG MODEL_FRAMEWORK_VERSION
+ENV STABILITYAI_MODEL_FRAMEWORK=${MODEL_FRAMEWORK}
+
+# Install packages for image generation with Stability models
+RUN pip install --no-cache-dir -U \
+    transformers==${TRANSFORMERS_VERSION} \
+    accelerate==${ACCELERATE_VERSION} \ 
+    ${MODEL_FRAMEWORK}==${MODEL_FRAMEWORK_VERSION} \    
+    'stability-sdk @ git+https://github.com/stability-ai/stability-sdk@sagemaker'
+#    Temporarily using development version
+#    stability-sdk==${STABILITY_SDK_VERSION}
+
+# Stability AI optimizer arguments (URLs and versions)
+ARG MODEL_OPTIMIZER
+ARG MODEL_OPTIMIZER_VERSION
+ARG MODEL_OPTIMIZER_URL
+ENV STABILITYAI_MODEL_OPTIMIZER=${MODEL_OPTIMIZER}
+
+# Install optimization framework if supplied
+RUN if [ ! -z ${MODEL_OPTIMIZER_URL} ]; then \
+      pip install --no-cache-dir -U "${MODEL_OPTIMIZER_URL}"; \    
+    elif [ ! -z ${MODEL_OPTIMIZER} ]; then \
+      if [ ! -z ${MODEL_OPTIMIZER_VERSION} ]; then \
+        pip install --no-cache-dir -U ${MODEL_OPTIMIZER}==${MODEL_OPTIMIZER_VERSION}; \
+      else \
+        pip install --no-cache-dir -U ${MODEL_OPTIMIZER}; \
+      fi; \
+    fi
 
 # add necessary certificate for aws sdk cpp download
 RUN mkdir -p /etc/pki/tls/certs && cp /etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt

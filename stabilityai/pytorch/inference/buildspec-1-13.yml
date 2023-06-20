@@ -1,0 +1,92 @@
+account_id: &ACCOUNT_ID <set-$ACCOUNT_ID-in-environment>
+region: &REGION <set-$REGION-in-environment>
+base_framework: &BASE_FRAMEWORK pytorch
+framework: &FRAMEWORK !join [ "stabilityai_", *BASE_FRAMEWORK]
+version: &VERSION 1.13.1
+short_version: &SHORT_VERSION "1.13"
+contributor: stabilityai
+arch_type: x86
+
+repository_info:
+  inference_repository: &INFERENCE_REPOSITORY
+    image_type: &INFERENCE_IMAGE_TYPE inference
+    root: !join [ "stabilityai/", *BASE_FRAMEWORK, "/", *INFERENCE_IMAGE_TYPE ]
+    repository_name: &REPOSITORY_NAME !join ["pr", "-", "stabilityai", "-", *BASE_FRAMEWORK, "-", *INFERENCE_IMAGE_TYPE]
+    repository: &REPOSITORY !join [ *ACCOUNT_ID, .dkr.ecr., *REGION, .amazonaws.com/, *REPOSITORY_NAME ]
+
+context:
+  inference_context: &INFERENCE_CONTEXT
+    torchserve-ec2-entrypoint:
+      source: docker/build_artifacts/torchserve-ec2-entrypoint.py
+      target: torchserve-ec2-entrypoint.py
+    torchserve-entrypoint:
+      source: docker/build_artifacts/torchserve-entrypoint.py
+      target: torchserve-entrypoint.py
+    config:
+      source: docker/build_artifacts/config.properties
+      target: config.properties
+    deep_learning_container:
+      source: ../../../src/deep_learning_container.py
+      target: deep_learning_container.py
+
+images:
+  BuildStabilityAiPytorchGpuPy39Cu117DiffusersInferenceDockerImage:
+    <<: *INFERENCE_REPOSITORY
+    build: &STABILITYAI_PYTORCH_GPU_INFERENCE_PY3 false    
+    image_size_baseline: &IMAGE_SIZE_BASELINE 12000
+    device_type: &DEVICE_TYPE gpu
+    python_version: &DOCKER_PYTHON_VERSION py3
+    tag_python_version: &TAG_PYTHON_VERSION py39
+    cuda_version: &CUDA_VERSION cu117
+    os_version: &OS_VERSION ubuntu20.04
+    model_framework: &MODEL_FRAMEWORK diffusers    
+    model_framework_version: &MODEL_FRAMEWORK_VERSION 0.14.0    
+    stability_sdk_version: &STABILITY_SDK_VERSION 0.8.1
+    tag: !join [ *VERSION, '-', *MODEL_FRAMEWORK, *MODEL_FRAMEWORK_VERSION, '-', *DEVICE_TYPE, '-',
+                 *TAG_PYTHON_VERSION, '-', *CUDA_VERSION, '-', *OS_VERSION ]
+    docker_file: !join [ docker/, *SHORT_VERSION, /, *DOCKER_PYTHON_VERSION, /,
+                         *CUDA_VERSION, /, *MODEL_FRAMEWORK, /Dockerfile., *DEVICE_TYPE ]
+    context:
+      <<: *INFERENCE_CONTEXT
+
+  BuildStabilityAiPytorchGpuPy39Cu117DiffusersXformersInferenceDockerImage:
+    <<: *INFERENCE_REPOSITORY
+    build: &STABILITYAI_PYTORCH_GPU_INFERENCE_PY3 false    
+    image_size_baseline: &IMAGE_SIZE_BASELINE 12000
+    device_type: &DEVICE_TYPE gpu
+    python_version: &DOCKER_PYTHON_VERSION py3
+    tag_python_version: &TAG_PYTHON_VERSION py39
+    cuda_version: &CUDA_VERSION cu117
+    os_version: &OS_VERSION ubuntu20.04
+    model_framework: &MODEL_FRAMEWORK diffusers    
+    model_framework_version: &MODEL_FRAMEWORK_VERSION 0.14.0    
+    stability_sdk_version: &STABILITY_SDK_VERSION 0.8.1
+    model_optimizer: &MODEL_OPTIMIZER xformers    
+    model_optimizer_version: &MODEL_OPTIMIZER_VERSTION 0.0.16    
+    tag: !join [ *VERSION, '-', *MODEL_FRAMEWORK, *MODEL_FRAMEWORK_VERSION, '-', *DEVICE_TYPE, '-', *MODEL_OPTIMIZER,
+                 '-', *TAG_PYTHON_VERSION, '-', *CUDA_VERSION, '-', *OS_VERSION ]
+    docker_file: !join [ docker/, *SHORT_VERSION, /, *DOCKER_PYTHON_VERSION, /,
+                         *CUDA_VERSION, /, *MODEL_FRAMEWORK, /Dockerfile., *DEVICE_TYPE ]
+    context:
+      <<: *INFERENCE_CONTEXT
+  BuildStabilityAiPytorchGpuPy39Cu117DiffusersOneflowInferenceDockerImage:
+    <<: *INFERENCE_REPOSITORY
+    build: &STABILITYAI_PYTORCH_GPU_INFERENCE_PY3 true
+    image_size_baseline: &IMAGE_SIZE_BASELINE 16000
+    device_type: &DEVICE_TYPE gpu
+    python_version: &DOCKER_PYTHON_VERSION py3
+    tag_python_version: &TAG_PYTHON_VERSION py39
+    cuda_version: &CUDA_VERSION cu117
+    os_version: &OS_VERSION ubuntu20.04
+    model_framework: &MODEL_FRAMEWORK diffusers    
+    model_framework_version: &MODEL_FRAMEWORK_VERSION 0.14.0    
+    stability_sdk_version: &STABILITY_SDK_VERSION 0.8.1
+    model_optimizer: &MODEL_OPTIMIZER oneflow
+    model_optimizer_version: &MODEL_OPTIMIZER_VERSION 0.9.1.dev20230507
+    model_optimizer_url: &MODEL_OPTIMIZER_URL https://stabilityai-public-packages.s3.us-west-2.amazonaws.com/wheels/oneflow/0.9.1/oneflow-0.9.1.dev20230507%2Bcu117-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+    tag: !join [ *VERSION, '-', *MODEL_FRAMEWORK, *MODEL_FRAMEWORK_VERSION, '-', *DEVICE_TYPE, '-', *MODEL_OPTIMIZER,
+                 '-', *TAG_PYTHON_VERSION, '-', *CUDA_VERSION, '-', *OS_VERSION ]
+    docker_file: !join [ docker/, *SHORT_VERSION, /, *DOCKER_PYTHON_VERSION, /,
+                         *CUDA_VERSION, /, *MODEL_FRAMEWORK, /Dockerfile., *DEVICE_TYPE ]
+    context:
+      <<: *INFERENCE_CONTEXT
