@@ -16,6 +16,7 @@ import os
 import shlex
 import subprocess
 import sys
+from pathlib import Path
 
 from sagemaker_inference import environment
 
@@ -36,6 +37,7 @@ if os.path.exists(SAI_MODEL_CACHE_FILE) and not os.path.exists(SAI_MODEL_CACHE_S
             SAI_MODEL_CACHE_PATH,
         ]
     )
+    Path(SAI_MODEL_CACHE_STATUS_FILE).touch()
 
 if sys.argv[1] == "serve":
     from sagemaker_pytorch_serving_container import serving

@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import os
+import re
 import sys
 
 from io import BytesIO
@@ -32,7 +33,10 @@ LOGGER.addHandler(logging.StreamHandler(sys.stdout))
 def test_sdxl_v1_0_gpu_stabilityai(framework_version, ecr_image, instance_type, sagemaker_regions):
     instance_type = "ml.g5.4xlarge"
     model_bucket = "stabilityai-public-packages"
-    sgm_version = "0.1.0"
+    sgm_version_match = re.search("(sgm\d+\.\d+\.\d+)", ecr_image)
+    if sgm_version_match is None:
+        raise RuntimeError("sgm version not found in tag")
+    sgm_version = sgm_version_match[0]
     model_prefix = f"model-packages/sdxl-v1-0-dlc/sgm{sgm_version}"
     model_file = f"sdxlv1-sgm{sgm_version}.tar.gz"
     inference_request = {

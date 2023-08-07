@@ -5,27 +5,27 @@ ARG PYTHON=python3
 ARG XFORMERS_VERSION=0.0.20
 
 # xformers must be installed from source due to the older version of python in the DLC
-RUN pip install ninja \
-  && pip install -v -U git+https://github.com/facebookresearch/xformers.git@v${XFORMERS_VERSION}#egg=xformers
+RUN pip install --no-cache-dir ninja \
+  && pip install --no-cache-dir -v -U git+https://github.com/facebookresearch/xformers.git@v${XFORMERS_VERSION}#egg=xformers
 
-ARG SGM_VERSION=0.1.0
+ARG SGM_VERSION=0.1.1
 
 # Install Stability Generative Models, at the moment the wheel install does not work so we need the full repo
 RUN cd /tmp \
-  && git clone https://github.com/stability-ai/generative-models -b ${SGM_VERSION} \
+  && git clone https://github.com/stability-ai/generative-models -b helpers-fixes \
   && cd generative-models \ 
-  && pip install -r requirements/pt2.txt \
-  && pip install . \
+  && pip install --no-cache-dir -r requirements/pt2.txt \
+  && pip install --no-cache-dir . \
   && rm -rf /tmp/generative-models
 
 # Resolve pip check conflicts and other issues
 RUN pip install --no-cache-dir -U \
-    "awscli>=1.29.15" \
-    "boto3>=1.28.15" \
-    "certifi>=2023.07.22" \
-    "pyopenssl>=23.2.0" \
-    "cryptography>=41.0.2" \
-    "transformers>=4.23.0"
+  "awscli>=1.29.15" \
+  "boto3>=1.28.15" \
+  "certifi>=2023.07.22" \
+  "pyopenssl>=23.2.0" \
+  "cryptography>=41.0.2" \
+  "transformers>=4.23.0"
 
 # Configure Torchserve for large model loading
 ENV TS_DEFAULT_RESPONSE_TIMEOUT=1000
