@@ -1,7 +1,7 @@
 boto3
 coverage
 docker-compose
-Flask==1.1.1
+Flask==2.2.5
 fabric
 flake8==3.7.7
 gitpython
